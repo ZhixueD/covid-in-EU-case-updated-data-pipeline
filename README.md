@@ -16,6 +16,7 @@ The project contains follow steps:
 3. Create a Cloud Storage bucket, named: t-osprey-337221-covid
 4. Setting Airflow variables in Airflow web UI
 5. Copy the DAG python file to Cloud Storage Dag folder
+6. Exploring DAG runs
 
 ## 1. Enable API used in this project
 
@@ -272,6 +273,39 @@ The Dag file contant:
 
         if __name__ == '__main__':
            run()
+           
+     
+     This dataflow file writen by python, using beam structure.
+     
+   ## 6. Exploring DAG runs
+   Open Airflow web interface:
+   
+   ![airflow2](https://user-images.githubusercontent.com/98153604/151399765-68857d63-577b-46df-9c42-85dfce09cceb.JPG)
+    
+   Open covid_composer_dataflow_dag
+   
+ ![airflow1](https://user-images.githubusercontent.com/98153604/151400286-1b02c3e1-1413-4e67-b6d6-5d8e83b05f0a.JPG)
+   
+ ![airflow15](https://user-images.githubusercontent.com/98153604/151400507-7caf7449-6137-4401-beef-eb9bb92e0d41.JPG)
+   
+   When this dag successful finished, go to Dataflow console, you will see a dataflow job create:
+   
+ ![airflow12](https://user-images.githubusercontent.com/98153604/151400951-7c259632-eab9-47bf-a240-30da9c39fa7f.JPG)
+   
+  Open this job:
+  
+  ![airflow13](https://user-images.githubusercontent.com/98153604/151401360-17b74312-4009-4d62-a726-c62b97ae02cf.JPG)
+  
+  ![airflow14](https://user-images.githubusercontent.com/98153604/151401410-ed4c26b6-70f3-4795-a47c-3fa8308c337b.JPG)
+
+
+  
+
+   
+   
+
+
+    
 
 
 
