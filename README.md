@@ -315,6 +315,8 @@ The Dag file contant:
  
  ## 9. Connect to Tableau
  
+ From Tableau, I can choose different country, check differnt date cases, and check cases distribution by country and also by region.
+ 
  ![Tableau](https://user-images.githubusercontent.com/98153604/151406640-8493c112-3a24-40e5-a979-5b7bfe9e9b0d.JPG)
 
  
