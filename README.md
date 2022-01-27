@@ -14,6 +14,8 @@ The project contains follow steps:
 1. Enable API used in this project.
 2. Create a Composer environment. 
 3. Create a Cloud Storage bucket, named: t-osprey-337221-covid
+4. Setting Airflow variables in Airflow web UI
+5. Copy the DAG python file to Cloud Storage Dag folder
 
 ## 1. Enable API used in this project
 
@@ -60,11 +62,41 @@ Click CREATE ENVIRONMENT and select Composer 1. Set the following for your envir
  
  Meanwhile, in this folder upload two files writen by python:
  
- 'covid_composer_dataflow_dag.py' : dag file for airflow
+ 'covid_composer_dataflow_dag.py' : dag file for airflow, which define the workflow
  
  'dataflow_etl_bigquery.py' : dataflow file for dataflow pipeline
  
  ![airflow6](https://user-images.githubusercontent.com/98153604/151390395-96840b0d-ba58-4bb8-aab7-544d2f1bf6b0.JPG)
+ 
+ ## 4. Setting Airflow variables in Airflow web UI
+ 
+Go back to Composer to check the status of your environment.
+
+Once your environment has been created, click the name of the environment (highcpu) to see its details.
+
+On the Environment details you'll see information such as the Airflow web interface URL, Kubernetes Engine cluster ID, and a link to the DAGs folder, which is stored in your bucket.
+
+![airflow11](https://user-images.githubusercontent.com/98153604/151392333-be81ef29-98c5-400a-9228-46921128f365.JPG)
+
+Open Airflow web interface URL, setting Airflow variables. Select Admin > Variables from the Airflow menu bar, then Create.
+
+![airflow5](https://user-images.githubusercontent.com/98153604/151392941-0a705cbf-f411-428c-aae4-b44f63bb9e2b.JPG)
+
+## 5. Copy the DAG python file to Cloud Storage Dag folder
+
+In step4, in the environment configration, we will find DAG folder path: 'gs://europe-central2-highcpu-816bf1da-bucket/dags'
+In step3, we have already upload the dag python file 'covid_composer_dataflow_dag.py' in the google cloud storage
+
+Run command line in cloud shell to copy dag python file to DAG folder:
+    
+    gsutil cp gs://t-osprey-337221-covid/covid_composer_dataflow_dag.py gs://europe-central2-highcpu-816bf1da-bucket/dags
+
+After this in DAG folder we will see the Dag python file 'covid_composer_dataflow_dag.py' is in Dag folder
+
+![airflow8](https://user-images.githubusercontent.com/98153604/151394951-0f9d11e4-6631-44e7-9144-a5d8cabbb35a.JPG)
+
+
+
 
  
  
