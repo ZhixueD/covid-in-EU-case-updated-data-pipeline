@@ -14,9 +14,12 @@ The project contains follow steps:
 1. Enable API used in this project.
 2. Create a Composer environment. 
 3. Create a Cloud Storage bucket, named: t-osprey-337221-covid
-4. Setting Airflow variables in Airflow web UI
-5. Copy the DAG python file to Cloud Storage Dag folder
-6. Exploring DAG runs
+4. Create a bigquery dataset
+5. Setting Airflow variables in Airflow web UI
+6. Copy the DAG python file to Cloud Storage Dag folder
+7. Exploring DAG runs
+8. Check the Bigquery
+9. Connect to Tableau
 
 ## 1. Enable API used in this project
 
@@ -69,7 +72,11 @@ Click CREATE ENVIRONMENT and select Composer 1. Set the following for your envir
  
  ![airflow6](https://user-images.githubusercontent.com/98153604/151390395-96840b0d-ba58-4bb8-aab7-544d2f1bf6b0.JPG)
  
- ## 4. Setting Airflow variables in Airflow web UI
+ ## 4. Create a bigquery dataset
+ 
+ ![bigquery datasets](https://user-images.githubusercontent.com/98153604/151402985-04bda7cb-7408-4f96-afeb-92fbd2d46462.JPG)
+
+ ## 5. Setting Airflow variables in Airflow web UI
  
 Go back to Composer to check the status of your environment.
 
@@ -83,7 +90,7 @@ Open Airflow web interface URL, setting Airflow variables. Select Admin > Variab
 
 ![airflow5](https://user-images.githubusercontent.com/98153604/151392941-0a705cbf-f411-428c-aae4-b44f63bb9e2b.JPG)
 
-## 5. Copy the DAG python file to Cloud Storage Dag folder
+## 6. Copy the DAG python file to Cloud Storage Dag folder
 
 In step4, in the environment configration, we will find DAG folder path: 'gs://europe-central2-highcpu-816bf1da-bucket/dags'
 In step3, we have already upload the dag python file 'covid_composer_dataflow_dag.py' in the google cloud storage
@@ -277,7 +284,7 @@ The Dag file contant:
      
      This dataflow file writen by python, using beam structure.
      
-   ## 6. Exploring DAG runs
+   ## 7. Exploring DAG runs
    Open Airflow web interface:
    
    ![airflow2](https://user-images.githubusercontent.com/98153604/151399765-68857d63-577b-46df-9c42-85dfce09cceb.JPG)
@@ -297,6 +304,28 @@ The Dag file contant:
   ![airflow13](https://user-images.githubusercontent.com/98153604/151401360-17b74312-4009-4d62-a726-c62b97ae02cf.JPG)
   
   ![airflow14](https://user-images.githubusercontent.com/98153604/151401410-ed4c26b6-70f3-4795-a47c-3fa8308c337b.JPG)
+  
+ ## 8. Check the Bigquery
+ 
+ two new tables have been generate
+ 
+ ![bigquery country](https://user-images.githubusercontent.com/98153604/151403206-92befa09-5508-4ca4-94c7-d51af98b29ce.JPG)
+ 
+ ![bigquery region](https://user-images.githubusercontent.com/98153604/151403298-56d7711c-0709-4636-b1fa-1af0ab8fd01a.JPG)
+ 
+ ## 9. Connect to Tableau
+ 
+ ![Tableau](https://user-images.githubusercontent.com/98153604/151406640-8493c112-3a24-40e5-a979-5b7bfe9e9b0d.JPG)
+
+ 
+ 
+
+ 
+
+  
+  
+  
+  
 
 
   
