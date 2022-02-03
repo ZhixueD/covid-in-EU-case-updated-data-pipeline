@@ -7,7 +7,7 @@ At the request of Member States, data on the daily number of new reported COVID-
 
 ## About this project
 
-I create an ETL batch data pipeline on google cloud platform by using Dataflow and Composer(AirFlow). The whole workflow covers daily data download, data upload to Google cloud storage, data transform and cleaning by Dataflow and load data to bigquery. When data in have loaded in Bigquery, we can analyze data using SQL in Bigquery and connect Tableau to Bigquery for data visulization and analysis.
+I create an ETL batch data pipeline on Google Cloud Platform by using Dataflow and Composer(AirFlow). The whole workflow covers daily data download, data upload to Google cloud storage, data transform and cleaning by Dataflow and load data to bigquery. When data in have loaded in Bigquery, we can analyze data using SQL in Bigquery and connect Tableau to Bigquery for data visulization and analysis. The pipeline schedule is control by Airflow, and can run the pipeline every day automaticlly, and update the data in Data Warehouse (Bigquery). The visulization in Tableau can also be updated easily according the updated data in Bigquery.
 
 The project contains follow steps:
 
