@@ -107,29 +107,25 @@ After this The airflow start to run the whole work flow
 
 The Dag file contant:
 
-        """Example Airflow DAG that install packages and download data from website into GCS, run dataflow to do data cleaning and load the final 
-        two tables to Bigquery for later analyze.
+        """Airflow DAG that install packages and download data from website into GCS, run dataflow to perform data cleaning,
+        data transform and load the final two tables to Bigquery for later analysis.
         This DAG relies on three Airflow variables
-
         * project_id - Google Cloud Project ID to use for the Cloud Dataflow cluster.
-        * gce_zone - Google Compute Engine zone where Cloud Dataflow cluster should be
-          created.
         * gce_region - Google Compute Engine region where Cloud Dataflow cluster should be
           created.
         """
         import datetime
-        import os
         from airflow import models
         from airflow.operators.bash_operator import BashOperator
         from airflow.providers.apache.beam.operators.beam import BeamRunPythonPipelineOperator
-        from airflow.utils.dates import days_ago
         from airflow.providers.google.cloud.operators.dataflow import DataflowConfiguration
+        from airflow.utils.dates import days_ago
 
         bucket_path = models.Variable.get("bucket_path")
         project_id = models.Variable.get("project_id")
         gce_region = models.Variable.get("gce_region")
 
-
+        # define default args for airflow
         default_args = {
             # Tell airflow to start one day ago, so that it runs as soon as you upload it
             "start_date": days_ago(1),
@@ -141,8 +137,7 @@ The Dag file contant:
         }
 
         # Define a DAG (directed acyclic graph) of tasks.
-        # Any task you create within the context manager is automatically added to the
-        # DAG object.
+        # Any task you create within the context manager is automatically added to the DAG object.
 
 
         with models.DAG(
@@ -150,41 +145,42 @@ The Dag file contant:
             "covid_composer_dataflow_dag",
             default_args=default_args,
             # The interval with which to schedule the DAG
-            schedule_interval=datetime.timedelta(days=1),  # Override to match your needs
-            ) as dag:
-
-            # define the first task
+            schedule_interval=datetime.timedelta(days=1),  # define schedule interval
+        ) as dag:
+            # define the first task, download first table from website and load data to Google cloud storage, saved as csv.
 
             first_data_download = BashOperator(
-                task_id='first_data_download',
-                bash_command='curl https://opendata.ecdc.europa.eu/covid19/nationalcasedeath_eueea_daily_ei/csv/data.csv | gsutil cp - gs://t-osprey-337221-covid/covid-eu/country.csv',        
+                task_id="first_data_download",
+                bash_command="curl https://opendata.ecdc.europa.eu/covid19/nationalcasedeath_eueea_daily_ei/csv/data.csv | " \
+                             f"gsutil cp - {bucket_path}/covid-eu/country.csv",
                 dag=dag,
             )
-
+            # define the second task, download second table from website and load data to Google cloud storage, saved as csv.
             second_data_download = BashOperator(
-                task_id='second_data_download',
-                bash_command='curl https://opendata.ecdc.europa.eu/covid19/subnationalcasedaily/csv/data.csv | gsutil cp - gs://t-osprey-337221-covid/covid-eu/region.csv',
+                task_id="second_data_download",
+                bash_command="curl https://opendata.ecdc.europa.eu/covid19/subnationalcasedaily/csv/data.csv | " \
+                             f" cp - {bucket_path}/covid-eu/region.csv",
                 dag=dag,
             )
-
-
+            # define the third task, run a dataflow pipeline, and load data to BigQuery.
             start_python_pipeline_dataflow_runner = BeamRunPythonPipelineOperator(
-            task_id="start_python_pipeline_dataflow_runner",
-            runner="DataflowRunner",
-            py_file='gs://t-osprey-337221-covid/dataflow_etl_bigquery.py',
-            pipeline_options={
-                'tempLocation': 'gs://{0}/staging/'.format(bucket_path),
-                'stagingLocation': 'gs://{0}/staging/'.format(bucket_path),
-            },
-            py_options=[],
-            py_requirements=['apache-beam[gcp]==2.35.0','apache_beam[dataframe]'],
-            py_interpreter='python3',
-            py_system_site_packages=False,
-            dataflow_config=DataflowConfiguration(
-                job_name='{{task.task_id}}', project_id='{0}'.format(project_id), location="europe-north1"
-            ),
+                task_id="start_python_pipeline_dataflow_runner",
+                runner="DataflowRunner",
+                py_file=f"{bucket_path}/dataflow_etl_bigquery.py",
+                pipeline_options={
+                    "tempLocation": "gs://{0}/staging/".format(bucket_path),
+                    "stagingLocation": "gs://{0}/staging/".format(bucket_path),
+                },
+                py_options=[],
+                py_requirements=["apache-beam[gcp]==2.35.0", "apache_beam[dataframe]"],
+                py_interpreter="python3",
+                py_system_site_packages=False,
+                dataflow_config=DataflowConfiguration(
+                    job_name="{{task.task_id}}", project_id=project_id, location=gce_region
+                ),
             )
 
+        # define the order for different tasks
         first_data_download >> second_data_download >> start_python_pipeline_dataflow_runner 
         
    In this Dag file, you will found 3 operators, which means the whole work flow can be 3 parts, the third the operator is 'BeamRunPythonPipelineOperator'
@@ -192,94 +188,88 @@ The Dag file contant:
    
    dataflow_etl_bigquery.py, the details of dataflow is :
  
-        import apache_beam as beam
-        import apache_beam.runners.interactive.interactive_beam as ib
-        from apache_beam.runners.interactive.interactive_runner import InteractiveRunner
-        from apache_beam.dataframe import convert
-        #pandas
-        from apache_beam.dataframe.transforms import DataframeTransform
-
-
-
-        PROJECT='t-osprey-337221'
-        BUCKET='t-osprey-337221-covid'
-
         """
-        from apache_beam.io.gcp.internal.clients import bigquery
+        This file is the python script for running dataflow pipeline.
+        Dataflow pipeline read 2 tables from Google cloud storage as csv files and do some data transform and cleaning
+        and load data to BigQuery to create 2 new tables for further analysis.
+        """
 
-        table_spec_region = bigquery.TableReference(
-            projectId='t-osprey-337221',
-            datasetId='covid_eu',
-            tableId='covid_region')
+        import apache_beam as beam
+        from apache_beam.dataframe import convert
 
-        table_spec_country = bigquery.TableReference(
-            projectId='t-osprey-337221',
-            datasetId='covid_eu',
-            tableId='covid_country')
-        """	
-        # project-id:dataset_id.table_id
+
+        PROJECT = 't-osprey-337221'
+        BUCKET = 't-osprey-337221-covid'
+
+        # project-id:dataset_id.table_id, BigQuery target table
         table_spec_region = 't-osprey-337221:covid_eu.covid_region'
         table_spec_country = 't-osprey-337221:covid_eu.covid_country'
 
-
         # column_name:BIGQUERY_TYPE, ...
         table_schema_region = 'country:string, region_name:string, nuts_code:string, date:TIMESTAMP, rate_14_day_per_100k:float'
-        table_schema_country = 'dateRep:string, cases:integer, deaths:integer, countriesAndTerritories:string, geoId:string, countryterritoryCode:string, popData2020:integer'
+        table_schema_country = 'dateRep:string, cases:integer, deaths:integer, countriesAndTerritories:string, geoId:string, ' \
+                               'countryterritoryCode:string, popData2020:integer'
 
 
         def run():
             argv = [
-              '--project={0}'.format(PROJECT),
-              '--save_main_session',
-              '--staging_location=gs://{0}/staging/'.format(BUCKET),
-              '--temp_location=gs://{0}/staging/'.format(BUCKET),
-              '--region=europe-north1',
-              '--runner=DataflowRunner'
+                '--project={0}'.format(PROJECT),
+                '--save_main_session',
+                '--staging_location=gs://{0}/staging/'.format(BUCKET),
+                '--temp_location=gs://{0}/staging/'.format(BUCKET),
+                '--region=europe-north1',
+                '--runner=DataflowRunner'
             ]
             with beam.Pipeline(argv=argv) as pipeline:
-                # Create two deferred Beam DataFrames with the contents of our csv file.
-                region_df = pipeline | 'Read region CSV' >> beam.dataframe.io.read_csv(r'gs://t-osprey-337221-covid/covid-eu/region.csv', usecols=[0,1,2,3,4])
-                country_df = pipeline | 'Read country CSV' >> beam.dataframe.io.read_csv(r'gs://t-osprey-337221-covid/covid-eu/country.csv', usecols=[0,4,5,6,7,8,9])
+                # Create two Beam DataFrames with the contents of our csv file, select column needed.
+                region_df = pipeline | 'Read region CSV' >> beam.dataframe.io.read_csv(
+                    f'{BUCKET}/covid-eu/region.csv', usecols=[0, 1, 2, 3, 4])
+                country_df = pipeline | 'Read country CSV' >> beam.dataframe.io.read_csv(
+                    f'{BUCKET}/covid-eu/country.csv', usecols=[0, 4, 5, 6, 7, 8, 9])
 
                 # Data cleaning
-                region_df.fillna(value=0,inplace=True)
-                region_df=region_df.astype({'country':'string', 'region_name':'string', 'nuts_code':'string', 'date':'datetime64', 'rate_14_day_per_100k':'float'})
-                country_df=country_df.astype({'dateRep':'string', 'cases':'int', 'deaths':'int', 'countriesAndTerritories':'string', 'geoId':'string', 'countryterritoryCode':'string', 'popData2020':'int'})
+                region_df.fillna(value=0, inplace=True)
+                region_df = region_df.astype(
+                    {'country': 'string', 'region_name': 'string', 'nuts_code': 'string', 'date': 'datetime64',
+                     'rate_14_day_per_100k': 'float'})
+                country_df = country_df.astype(
+                    {'dateRep': 'string', 'cases': 'int', 'deaths': 'int', 'countriesAndTerritories': 'string',
+                     'geoId': 'string', 'countryterritoryCode': 'string', 'popData2020': 'int'})
                 country_df['cases'].fillna(value=0, inplace=True)
-                country_df['deaths'].fillna(value=0, inplace=True) 
+                country_df['deaths'].fillna(value=0, inplace=True)
 
                 (
-                  # Convert the Beam DataFrame to a PCollection.
-                  convert.to_pcollection(region_df)
+                    # Convert the Beam DataFrame to a PCollection.
+                    convert.to_pcollection(region_df)
 
-                  # We get named tuples, we can convert them to dictionaries like this.
-                  | 'region To dictionaries' >> beam.Map(lambda x: dict(x._asdict()))
+                    # We get named tuples, we can convert them to dictionaries like this.
+                    | 'region To dictionaries' >> beam.Map(lambda x: dict(x._asdict()))
 
-                  # save the elements to GCS.
-                  |  'region save to bigquery' >> beam.io.WriteToBigQuery(
-                                                                        table_spec_region,
-                                                                        schema=table_schema_region,
-                                                                        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-                                                                        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED)
+                    # save the elements to GCS.
+                    | 'region save to bigquery' >> beam.io.WriteToBigQuery(
+                                                       table_spec_region,
+                                                       schema=table_schema_region,
+                                                       write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+                                                       create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED)
                 )
                 (
-                  # Convert the Beam DataFrame to a PCollection.
-                  convert.to_pcollection(country_df)
+                    # Convert the Beam DataFrame to a PCollection.
+                    convert.to_pcollection(country_df)
 
-                  # We get named tuples, we can convert them to dictionaries like this.
-                  | 'country To dictionaries' >> beam.Map(lambda x: dict(x._asdict()))
+                    # We get named tuples, we can convert them to dictionaries like this.
+                    | 'country To dictionaries' >> beam.Map(lambda x: dict(x._asdict()))
 
-                  # save the elements to GCS.
-                  |  'country save to bigquery' >> beam.io.WriteToBigQuery(
-                                                                        table_spec_country,
-                                                                        schema=table_schema_country,
-                                                                        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
-                                                                        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED)
+                    # save the elements to GCS.
+                    | 'country save to bigquery' >> beam.io.WriteToBigQuery(
+                                                        table_spec_country,
+                                                        schema=table_schema_country,
+                                                        write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+                                                        create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED)
                 )
 
 
         if __name__ == '__main__':
-           run()
+            run()
            
      
      This dataflow file writen by python, using beam structure.
